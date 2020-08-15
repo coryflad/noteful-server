@@ -1,4 +1,4 @@
-INSERT INTO folders (id, name )
+INSERT INTO folders (name )
 VALUES
   ('Folder One'),
   ('Folder Two'),
