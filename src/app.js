@@ -21,7 +21,7 @@ app.use(validateBearerToken)
 app.use(foldersRouter)
 app.use(notesRouter)
 
-// shitfuck
+
 
 app.get('/', (req, res) => {
   res.send('Hello, world!')
