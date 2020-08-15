@@ -4,12 +4,12 @@ const store = require('../src/store')
 describe('Notes Endpoints', () => {
   let notesCopy
   beforeEach('copy the notes', () => {
-    // copy the bookmarks so we can restore them after testing
+    // copy the notes so we can restore them after testing
     notesCopy = store.notes.slice()
   })
 
   afterEach('restore the notes', () => {
-    // restore the bookmarks back to original
+    // restore the notes back to original
     store.notes = notesCopy
   })
 
@@ -20,163 +20,105 @@ describe('Notes Endpoints', () => {
         .expect(401, { error: 'Unauthorized request' })
     })
 
-  //   it(`responds with 401 Unauthorized for POST /bookmarks`, () => {
-  //     return supertest(app)
-  //       .post('/bookmarks')
-  //       .send({ title: 'test-title', url: 'http://some.thing.com', rating: 1 })
-  //       .expect(401, { error: 'Unauthorized request' })
-  //   })
+    it(`responds with 401 Unauthorized for POST /notes`, () => {
+      return supertest(app)
+        .post('/notes')
+        .send({ name: 'test-name', content: 'test-content' })
+        .expect(401, { error: 'Unauthorized request' })
+    })
 
-  //   it(`responds with 401 Unauthorized for GET /bookmarks/:id`, () => {
-  //     const secondBookmark = store.bookmarks[1]
-  //     return supertest(app)
-  //       .get(`/bookmarks/${secondBookmark.id}`)
-  //       .expect(401, { error: 'Unauthorized request' })
-  //   })
+    it(`responds with 401 Unauthorized for GET /notes/:id`, () => {
+      const secondNote = store.notes[1]
+      return supertest(app)
+        .get(`/notes/${secondNote.id}`)
+        .expect(401, { error: 'Unauthorized request' })
+    })
 
-  //   it(`responds with 401 Unauthorized for DELETE /bookmarks/:id`, () => {
-  //     const aBookmark = store.bookmarks[1]
-  //     return supertest(app)
-  //       .delete(`/bookmarks/${aBookmark.id}`)
-  //       .expect(401, { error: 'Unauthorized request' })
-  //   })
-  // })
+      it(`responds with 401 Unauthorized for DELETE /bookmarks/:id`, () => {
+        const aNote = store.notes[1]
+        return supertest(app)
+          .delete(`/bookmarks/${aNote.id}`)
+          .expect(401, { error: 'Unauthorized request' })
+      })
+    })
 
-  // describe('GET /bookmarks', () => {
-  //   it('gets the bookmarks from the store', () => {
-  //     return supertest(app)
-  //       .get('/bookmarks')
-  //       .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-  //       .expect(200, store.bookmarks)
-  //   })
-  // })
+    describe('GET /notes', () => {
+      it('gets the notes from the store', () => {
+        return supertest(app)
+          .get('/notes')
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(200, store.notes)
+      })
+    })
 
-  // describe('GET /bookmarks/:id', () => {
-  //   it('gets the bookmark by ID from the store', () => {
-  //     const secondBookmark = store.bookmarks[1]
-  //     return supertest(app)
-  //       .get(`/bookmarks/${secondBookmark.id}`)
-  //       .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-  //       .expect(200, secondBookmark)
-  //   })
+    describe('GET /notes/:id', () => {
+      it('gets the note by ID from the store', () => {
+        const secondNote = store.notes[1]
+        return supertest(app)
+          .get(`/notes/${secondNote.id}`)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(200, secondNote)
+      })
 
-  //   it(`returns 404 whe bookmark doesn't exist`, () => {
-  //     return supertest(app)
-  //       .get(`/bookmarks/doesnt-exist`)
-  //       .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-  //       .expect(404, 'Bookmark Not Found')
-  //   })
+      it(`returns 404 whe note doesn't exist`, () => {
+        return supertest(app)
+          .get(`/notes/doesnt-exist`)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(404, 'Note Not Found')
+      })
+    })
+
+    describe('DELETE /notes/:id', () => {
+      it('removes the note by ID from the store', () => {
+        const secondNote = store.notes[1]
+        const expectedNotes = store.notes.filter(s => s.id !== secondNote.id)
+        return supertest(app)
+          .delete(`/notes/${secondNote.id}`)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(204)
+          .then(() => {
+            expect(store.notes).to.eql(expectedNotes)
+          })
+      })
+
+      it(`returns 404 when a note doesn't exist`, () => {
+        return supertest(app)
+          .delete(`/notes/doesnt-exist`)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(404, 'Note Not Found')
+      })
+    })
+
+    describe('POST /notes', () => {
+      it(`responds with 400 missing 'name' if not supplied`, () => {
+        const newNoteMissingName = {
+          content: 'test-content'
+        }
+        return supertest(app)
+          .post(`/notes`)
+          .send(newNoteMissingName)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(400, `'name' is required`)
+      })
+
+      it('adds a new note to the store', () => {
+        const newNote = {
+          name: 'test-name',
+          content: 'test-content'
+        }
+        return supertest(app)
+          .post(`/notes`)
+          .send(newNote)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(201)
+          .expect(res => {
+            expect(res.body.name).to.eql(newNote.name)
+            expect(res.body.content).to.eql(newNote.content)
+            // expect(res.body.id).to.be.a('string')
+          })
+          .then(res => {
+            expect(store.notes[store.notes.length - 1]).to.eql(res.body)
+          })
+      })
+    })
   })
-
-  // describe('DELETE /bookmarks/:id', () => {
-  //   it('removes the bookmark by ID from the store', () => {
-  //     const secondBookmark = store.bookmarks[1]
-  //     const expectedBookmarks = store.bookmarks.filter(s => s.id !== secondBookmark.id)
-  //     return supertest(app)
-  //       .delete(`/bookmarks/${secondBookmark.id}`)
-  //       .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-  //       .expect(204)
-  //       .then(() => {
-  //         expect(store.bookmarks).to.eql(expectedBookmarks)
-  //       })
-  //   })
-
-  //   it(`returns 404 whe bookmark doesn't exist`, () => {
-  //     return supertest(app)
-  //       .delete(`/bookmarks/doesnt-exist`)
-  //       .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-  //       .expect(404, 'Bookmark Not Found')
-  //   })
-  // })
-
-  // describe('POST /bookmarks', () => {
-  //   it(`responds with 400 missing 'title' if not supplied`, () => {
-  //     const newBookmarkMissingTitle = {
-  //       // title: 'test-title',
-  //       url: 'https://test.com',
-  //       rating: 1,
-  //     }
-  //     return supertest(app)
-  //       .post(`/bookmarks`)
-  //       .send(newBookmarkMissingTitle)
-  //       .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-  //       .expect(400, `'title' is required`)
-  //   })
-
-  //   it(`responds with 400 missing 'url' if not supplied`, () => {
-  //     const newBookmarkMissingUrl = {
-  //       title: 'test-title',
-  //       // url: 'https://test.com',
-  //       rating: 1,
-  //     }
-  //     return supertest(app)
-  //       .post(`/bookmarks`)
-  //       .send(newBookmarkMissingUrl)
-  //       .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-  //       .expect(400, `'url' is required`)
-  //   })
-
-  //   it(`responds with 400 missing 'rating' if not supplied`, () => {
-  //     const newBookmarkMissingRating = {
-  //       title: 'test-title',
-  //       url: 'https://test.com',
-  //       // rating: 1,
-  //     }
-  //     return supertest(app)
-  //       .post(`/bookmarks`)
-  //       .send(newBookmarkMissingRating)
-  //       .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-  //       .expect(400, `'rating' is required`)
-  //   })
-
-  //   it(`responds with 400 invalid 'rating' if not between 0 and 5`, () => {
-  //     const newBookmarkInvalidRating = {
-  //       title: 'test-title',
-  //       url: 'https://test.com',
-  //       rating: 'invalid',
-  //     }
-  //     return supertest(app)
-  //       .post(`/bookmarks`)
-  //       .send(newBookmarkInvalidRating)
-  //       .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-  //       .expect(400, `'rating' must be a number between 0 and 5`)
-  //   })
-
-  //   it(`responds with 400 invalid 'url' if not a valid URL`, () => {
-  //     const newBookmarkInvalidUrl = {
-  //       title: 'test-title',
-  //       url: 'htp://invalid-url',
-  //       rating: 1,
-  //     }
-  //     return supertest(app)
-  //       .post(`/bookmarks`)
-  //       .send(newBookmarkInvalidUrl)
-  //       .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-  //       .expect(400, `'url' must be a valid URL`)
-  //   })
-
-  //   it('adds a new bookmark to the store', () => {
-  //     const newBookmark = {
-  //       title: 'test-title',
-  //       url: 'https://test.com',
-  //       description: 'test description',
-  //       rating: 1,
-  //     }
-  //     return supertest(app)
-  //       .post(`/bookmarks`)
-  //       .send(newBookmark)
-  //       .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
-  //       .expect(201)
-  //       .expect(res => {
-  //         expect(res.body.title).to.eql(newBookmark.title)
-  //         expect(res.body.url).to.eql(newBookmark.url)
-  //         expect(res.body.description).to.eql(newBookmark.description)
-  //         expect(res.body.rating).to.eql(newBookmark.rating)
-  //         expect(res.body.id).to.be.a('string')
-  //       })
-  //       .then(res => {
-  //         expect(store.bookmarks[store.bookmarks.length - 1]).to.eql(res.body)
-  //       })
-  //   })
-  // })
-})
