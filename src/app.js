@@ -28,6 +28,10 @@ app.get('/', (req, res) => {
   res.send('Hello, world!')
 })
 
+app.get('/folders', (req, res, next) => {
+  res.send('All folders')
+})
+
 
 
 module.exports = app
