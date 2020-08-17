@@ -16,6 +16,7 @@ app.use(morgan((NODE_ENV === 'production') ? 'tiny' : 'common', {
 }))
 app.use(cors())
 app.use(helmet())
+app.use(errorHandler)
 app.use(validateBearerToken)
 
 app.use(foldersRouter)
@@ -27,6 +28,6 @@ app.get('/', (req, res) => {
   res.send('Hello, world!')
 })
 
-app.use(errorHandler)
+
 
 module.exports = app
