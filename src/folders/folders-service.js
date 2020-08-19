@@ -1,8 +1,8 @@
-const FoldersService = {
+const FolderService = {
     getAllFolders(knex) {
         return knex.select('*').from('folders')
     },
-    getById(knex, id) {
+    getFolderById(knex, id) {
         return knex.from('folders').select('*').where('id', id).first()
     },
     insertFolder(knex, newFolder) {
@@ -26,4 +26,4 @@ const FoldersService = {
     },
 }
 
-module.exports = FoldersService
+module.exports = FolderService

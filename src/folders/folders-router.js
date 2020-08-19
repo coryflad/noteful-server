@@ -2,77 +2,92 @@ const express = require('express')
 const uuid = require('uuid/v4')
 const logger = require('../logger')
 const store = require('../store')
+const FolderService = require('./folders-service')
 
 const foldersRouter = express.Router()
 const bodyParser = express.json()
+const jsonParser = express.json()
 
 foldersRouter
-  .route('/folders')
-  .get((req, res) => {
-    res.json(store.folders)
+  .route('/')
+  .get((req, res, next) => {
+    const knexInstance = req.app.get('db')
+    FolderService.getAllFolders(knexInstance)
+      .then(folders => {
+        res.json(folders)
+      })
+      .catch(next)
   })
-  .post(bodyParser, (req, res) => {
-    for (const field of ['name']) {
-      if (!req.body[field]) {
-        logger.error(`${field} is required`)
-        return res.status(400).send(`'${field}' is required`)
-      }
-    }
-    const { name } = req.body
 
-    if (!name) {
-      logger.error(`Name is required`)
-      return res
-        .status(400)
-        .send('Invalid Data')
+
+  .post(jsonParser, (req, res, next) => {
+    const {
+      name
+    } = req.body
+    const newFolder = {
+      name
     }
 
-    const folder = { id: uuid(), name }
+    for (const [key, value] of Object.entries(newFolder))
+      if (value == null)
+        return res.status(400).json({
+          error: {
+            message: `Missing '${key}' in request body`
+          }
+        })
 
-    store.folders.push(folder)
-
-    logger.info(`Folder with id ${folder.id} created`)
-    res
-      .status(201)
-      .location(`http://localhost:8000/folders/${folder.id}`)
-      .json(folder)
+    FolderService.insertFolder(
+      req.app.get('db'),
+      newFolder
+    )
+      .then(folder => {
+        res
+          .status(201)
+          .json(folder)
+      })
+      .catch(next)
   })
 
 foldersRouter
-  .route('/folders/:folder_id')
-  .get((req, res) => {
-    const { folder_id } = req.params
-
-    const folder = store.folders.find(f => f.id == folder_id)
-
-    if (!folder) {
-      logger.error(`Folder with id ${folder_id} not found.`)
-      return res
-        .status(404)
-        .send('Folder Not Found')
+  .route('/:folder_id')
+  .all((req, res, next) => {
+    if (isNaN(parseInt(req.params.folder_id))) {
+      return res.status(404).json({
+        error: {
+          message: `Invalid id`
+        }
+      })
     }
-
-    res.json(folder)
+    FolderService.getFolderById(
+      req.app.get('db'),
+      req.params.folder_id
+    )
+      .then(folder => {
+        if (!folder) {
+          return res.status(404).json({
+            error: {
+              message: `Folder doesn't exist`
+            }
+          })
+        }
+        res.folder = folder
+        next()
+      })
+      .catch(next)
+  })
+  .get((req, res, next) => {
+    res.json(res.folder)
   })
 
-  .delete((req, res) => {
-    const { folder_id } = req.params
-
-    const folderIndex = store.folders.findIndex(f => f.id === folder_id)
-
-    if (folderIndex === -1) {
-      logger.error(`Folder with id ${folder_id} not found.`)
-      return res
-        .status(404)
-        .send('Folder Not Found')
-    }
-
-    store.folders.splice(folderIndex, 1)
-
-    logger.info(`Folder with id ${folder_id} deleted.`)
-    res
-      .status(204)
-      .end()
+  .delete((req, res, next) => {
+    FolderService.deleteFolder(
+      req.app.get('db'),
+      req.params.folder_id
+    )
+      .then(numRowsAffected => {
+        res.status(204).end()
+      })
+      .catch(next)
   })
 
 module.exports = foldersRouter

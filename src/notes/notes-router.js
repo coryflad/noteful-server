@@ -2,14 +2,21 @@ const express = require('express')
 const uuid = require('uuid/v4')
 const logger = require('../logger')
 const store = require('../store')
+const notesService = require('./notes-service')
 
 const notesRouter = express.Router()
 const bodyParser = express.json()
+const jsonParser = express.json()
 
 notesRouter
-  .route('/notes')
-  .get((req, res) => {
-    res.json(store.notes)
+  .route('/')
+  .get((req, res, next) => {
+    const knexInstance = req.app.get('db')
+    notesService.getAllNotes(knexInstance)
+      .then(notes => {
+        res.json(notes)
+      })
+      .catch(next)
   })
   .post(bodyParser, (req, res) => {
     for (const field of ['name', 'content']) {

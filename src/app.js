@@ -8,6 +8,7 @@ const validateBearerToken = require('./validate-bearer-token')
 const errorHandler = require('./error-handler')
 const foldersRouter = require('./folders/folders-router')
 const notesRouter = require('./notes/notes-router')
+const { folders } = require('./store')
 
 const app = express()
 
@@ -19,19 +20,13 @@ app.use(helmet())
 app.use(errorHandler)
 app.use(validateBearerToken)
 
-app.use(foldersRouter)
-app.use(notesRouter)
-
+app.use('/api/folders', foldersRouter)
+app.use('/api/notes', notesRouter)
 
 
 app.get('/', (req, res) => {
   res.send('Hello, world!')
 })
-
-app.get('/folders', (req, res, next) => {
-  res.send('All folders')
-})
-
 
 
 module.exports = app
