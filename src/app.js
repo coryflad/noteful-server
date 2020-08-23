@@ -18,7 +18,7 @@ app.use(morgan((NODE_ENV === 'production') ? 'tiny' : 'common', {
 app.use(cors())
 app.use(helmet())
 app.use(errorHandler)
-app.use(validateBearerToken)
+// app.use(validateBearerToken)
 
 app.use('/api/folders', foldersRouter)
 app.use('/api/notes', notesRouter)

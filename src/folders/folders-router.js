@@ -1,11 +1,11 @@
 const express = require('express')
 const uuid = require('uuid/v4')
-const logger = require('../logger')
-const store = require('../store')
+// const logger = require('../logger')
+// const store = require('../store')
 const FolderService = require('./folders-service')
 
 const foldersRouter = express.Router()
-const bodyParser = express.json()
+// const bodyParser = express.json()
 const jsonParser = express.json()
 
 foldersRouter
@@ -18,7 +18,6 @@ foldersRouter
       })
       .catch(next)
   })
-
 
   .post(jsonParser, (req, res, next) => {
     const {

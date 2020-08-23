@@ -1,11 +1,11 @@
 const express = require('express')
 const uuid = require('uuid/v4')
-const logger = require('../logger')
-const store = require('../store')
+// const logger = require('../logger')
+// const store = require('../store')
 const notesService = require('./notes-service')
 
 const notesRouter = express.Router()
-const bodyParser = express.json()
+// const bodyParser = express.json()
 const jsonParser = express.json()
 
 notesRouter
@@ -18,61 +18,79 @@ notesRouter
       })
       .catch(next)
   })
-  .post(bodyParser, (req, res) => {
-    for (const field of ['name', 'content']) {
-      if (!req.body[field]) {
-        logger.error(`${field} is required`)
-        return res.status(400).send(`'${field}' is required`)
-      }
+
+  .post(jsonParser, (req, res, next) => {
+    const {
+      name,
+      content
+    } = req.body
+    const newNote = {
+      name,
+      content
     }
-    const { name, content } = req.body
 
-    const note = { id: uuid(), name, content }
+    for (const [key, value] of Object.entries(newNote))
+      if (value == null)
+        return res.status(400).json({
+          error: {
+            message: `Missing '${key}' in request body`
+          }
+        })
 
-    store.notes.push(note)
-
-    logger.info(`Note with id ${note.id} created`)
-    res
-      .status(201)
-      .location(`http://localhost:8000/notes/${note.id}`)
-      .json(note)
+    notesService.insertNote(
+      req.app.get('db'),
+      newNote
+    )
+      .then(note => {
+        res
+          .status(201)
+          .json(note)
+      })
+      .catch(next)
   })
-
 
 notesRouter
-  .route('/notes/:note_id')
-  .get((req, res) => {
-    const { note_id } = req.params
-
-    const note = store.notes.find(n => n.id == note_id)
-
-    if (!note) {
-      logger.error(`Note with id ${note_id} not found.`)
-      return res
-        .status(404)
-        .send('Note Not Found')
+  .route('/:note_id')
+  .all((req, res, next) => {
+    if (isNaN(parseInt(req.params.note_id))) {
+      return res.status(404).json({
+        error: {
+          message: `Invalid id`
+        }
+      })
     }
-
-    res.json(note)
+    notesService.getNoteById(
+      req.app.get('db'),
+      req.params.note_id
+    )
+      .then(note => {
+        if (!note) {
+          return res.status(404).json({
+            error: {
+              message: `Note doesn't exist`
+            }
+          })
+        }
+        res.note = note
+        next()
+      })
+      .catch(next)
   })
-  .delete((req, res) => {
-    const { note_id } = req.params
-
-    const noteIndex = store.notes.findIndex(b => b.id === note_id)
-
-    if (noteIndex === -1) {
-      logger.error(`Note with id ${note_id} not found.`)
-      return res
-        .status(404)
-        .send('Note Not Found')
-    }
-
-    store.notes.splice(noteIndex, 1)
-
-    logger.info(`Note with id ${note_id} deleted.`)
-    res
-      .status(204)
-      .end()
+  .get((req, res, next) => {
+    res.json(res.note)
   })
+
+  .delete((req, res, next) => {
+    notesService.deleteNote(
+      req.app.get('db'),
+      req.params.note_id
+    )
+      .then(numRowsAffected => {
+        res.status(204).end()
+      })
+      .catch(next)
+  })
+
+
 
 module.exports = notesRouter
